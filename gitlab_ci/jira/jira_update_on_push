@@ -1,0 +1,164 @@
+# This file is a template, and might need editing before it works on your project.
+# This is a sample GitLab CI/CD configuration file that should run without any modifications.
+# It demonstrates a basic 3 stage CI/CD pipeline. Instead of real tests or scripts,
+# it uses echo commands to simulate the pipeline execution.
+#
+# A pipeline is composed of independent jobs that run scripts, grouped into stages.
+# Stages run in sequential order, but jobs within stages run in parallel.
+#
+# For more information, see: https://docs.gitlab.com/ee/ci/yaml/index.html#stages
+#
+# You can copy and paste this template into a new `.gitlab-ci.yml` file.
+# You should not add this template to an existing `.gitlab-ci.yml` file by using the `include:` keyword.
+#
+# To contribute improvements to CI/CD templates, please follow the Development guide at:
+# https://docs.gitlab.com/ee/development/cicd/templates.html
+# This specific template is located at:
+# https://gitlab.com/gitlab-org/gitlab/-/blob/master/lib/gitlab/ci/templates/Getting-Started.gitlab-ci.yml
+
+stages:
+  - jira_update
+  - build
+  - test
+  - deploy
+
+build-job:
+  stage: build
+  script:
+    - echo "Compiling the code..."
+    - echo "Compile complete."
+
+unit-test-job:
+  stage: test
+  script:
+    - echo "Running unit tests... This will take about 60 seconds."
+    - sleep 60
+    - echo "Code coverage is 90%"
+
+lint-test-job:
+  stage: test
+  script:
+    - echo "Linting code... This will take about 10 seconds."
+    - sleep 10
+    - echo "No lint issues found."
+
+deploy-job:
+  stage: deploy
+  environment: production
+  script:
+    - echo "Deploying application..."
+    - echo "Application successfully deployed."
+
+update-jira-job:
+  stage: jira_update
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache curl jq
+  allow_failure: true  # ✅ Permet à la pipeline de continuer même si ce job échoue
+  script:
+    - JIRA_PROJECT="XPROJECT"
+    - JIRA_ISSUE=$(echo "$CI_COMMIT_MESSAGE" | grep -oE "feature/${JIRA_PROJECT}-[0-9]+" | head -1 | grep -oE "${JIRA_PROJECT}-[0-9]+" || true)
+    - set -x
+    - |      
+      # Définir l'URL de base Jira avec une valeur par défaut
+      JIRA_BASE_URL="${JIRA_BASE_URL:-https://xprojectprofessionnal.atlassian.net}"
+      echo "🔗 Base URL Jira : $JIRA_BASE_URL" 
+      echo "📄 CI_COMMIT_MESSAGE : $CI_COMMIT_MESSAGE"
+
+      # Vérifier si un code Jira a été trouvé
+      if [ -n "$JIRA_ISSUE" ]; then
+        echo "JIRA Issue found: $JIRA_ISSUE"
+      else
+        echo "Aucun code Jira trouvé." 
+        exit 0
+      fi 
+
+      echo "📌 Ticket Jira détecté : $JIRA_ISSUE"
+
+      # Utiliser l'ID de transition défini ou la valeur par défaut "4" (tests)
+      TRANSITION_ID="${JIRA_TRANSITION_ID:-4}"
+      echo "🔄 Transition ID : $TRANSITION_ID"
+
+      # Authentification en Basic Auth avec le token API
+      JIRA_AUTH="$JIRA_USER:$JIRA_API_TOKEN"
+      echo "🔑 JIRA_AUTH : $JIRA_AUTH"
+
+      # Changer le statut de la tâche Jira
+      echo "⚙️ Requête Jira : POST $JIRA_BASE_URL/rest/api/3/issue/$JIRA_ISSUE/transitions"
+      RESPONSE=$(curl -s -o response.log -w "%{http_code}" -u $JIRA_AUTH \
+        --request POST \
+        --url "$JIRA_BASE_URL/rest/api/3/issue/$JIRA_ISSUE/transitions" \
+        --header "Accept: application/json" \
+        --header "Content-Type: application/json" \
+        --data '{
+          "transition": { "id": "'"$TRANSITION_ID"'" }
+        }')
+      
+      cat response.log
+      
+      echo "🔄 Réponse Jira pour la transition : $RESPONSE"
+      if [ "$RESPONSE" -eq 204 ]; then
+        echo "✅ Tâche Jira $JIRA_ISSUE mise à jour avec succès !"
+      else
+        echo "❌ Erreur lors de la mise à jour de Jira (Code HTTP: $RESPONSE)"
+        exit 1
+      fi
+      
+      # Ajouter un commentaire sur Jira
+      # Utilisation de la variable CI_MERGE_REQUEST_URL pour récupérer l'URL de la Merge Request
+      MR_URL="${CI_PROJECT_URL}/-/commit/${CI_COMMIT_SHA}"
+      echo "📎 Lien vers le commit de fusion : $MR_URL"
+      
+      COMMENT_BODY="✅ La Merge Request liée à cette tâche a été fusionnée par $CI_COMMIT_AUTHOR et la tâche est passée en tests. "
+      
+      echo "💬 Le commentaire : COMMENT_BODY"  
+    
+      # Ajouter un commentaire sur Jira
+      echo "⚙️ Requête Jira pour ajouter un commentaire : POST $JIRA_BASE_URL/rest/api/3/issue/$JIRA_ISSUE/comment"
+      COMMENT_RESPONSE=$(curl -s -o comment_response.log -w "%{http_code}" -u $JIRA_AUTH \
+        --request POST \
+        --url "$JIRA_BASE_URL/rest/api/3/issue/$JIRA_ISSUE/comment" \
+        --header "Accept: application/json" \
+        --header "Content-Type: application/json" \
+        --data '{
+          "body": 
+          {
+            "content": [
+                {
+                  "content": [
+                    {
+                      "text": "'"$COMMENT_BODY"'",
+                      "type": "text"
+                    },
+                    {
+                      "text":"[Voir la le commit de fusion]",
+                      "type":"text",
+                      "marks":[
+                        {
+                          "type":"link",
+                          "attrs":{
+                            "href":"'"$MR_URL"'"
+                          }
+                        }
+                      ]
+                    }
+                  ],
+                  "type": "paragraph"
+                }
+            ],
+            "type": "doc",
+            "version": 1
+          }
+        }')
+      
+      cat comment_response.log
+
+      echo "💬 Réponse Jira pour le commentaire : $COMMENT_RESPONSE"
+      if [ "$COMMENT_RESPONSE" -eq 201 ]; then
+        echo "💬 Commentaire ajouté sur la tâche Jira $JIRA_ISSUE"
+      else
+        echo "❌ Erreur lors de l'ajout du commentaire Jira (Code HTTP: $COMMENT_RESPONSE)" 
+        exit 1
+      fi
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "develop" && $CI_PIPELINE_SOURCE == "push"'
