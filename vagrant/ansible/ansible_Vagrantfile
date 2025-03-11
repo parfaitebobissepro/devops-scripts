@@ -1,0 +1,46 @@
+Vagrant.configure("2") do |config|
+  # Définir la version de la box et le nom de la machine
+  config.vm.box = "debian/bullseye64"
+  config.vm.hostname = "ansible-vm"
+
+  # Configurer la mémoire RAM de la machine virtuelle
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = "1024"  # 1 Go de RAM
+  end
+
+  config.vm.network "forwarded_port", guest: 22, host: 2222 
+
+  # Provisionnement pour copier la clé publique dans la VM
+  config.vm.provision "file", source: "./keys/insecure_private_key.pub", destination: "/home/vagrant/.ssh/authorized_keys"
+  config.vm.provision "file", source: "./keys/insecure_private_key", destination: "/home/vagrant/insecure_private_key"
+
+  # Provisionning playbook file
+  config.vm.provision "file", source: "./provisioning/playbook.yml", destination: "/home/vagrant/playbook.yml"
+
+  # Provisioning : mettre à jour le gestionnaire de packages et installer les outils de base
+  config.vm.provision "shell", inline: <<-SHELL
+    echo "--- Début du provisioning Shell ---"
+    echo "Mise à jour des paquets..."
+    apt-get update -y && apt-get upgrade -y
+
+    echo "Installation des outils nécessaires..."
+    apt-get install -y sudo curl vim unzip htop software-properties-common
+
+    echo "Ajout du dépôt Ansible officiel pour Debian Bullseye..."
+    echo "deb http://deb.debian.org/debian bullseye-backports main" | tee /etc/apt/sources.list.d/bullseye-backports.list
+    apt-get update -y
+
+    echo "Installation d'Ansible depuis les backports..."
+    apt-get install -y -t bullseye-backports ansible
+
+    echo "--- Fin du provisioning Shell ---"
+  SHELL
+
+  # Exécution automatique du playbook Ansible après l'installation
+  config.vm.provision "shell", inline: <<-SHELL
+    echo "--- Exécution du playbook Ansible ---"
+    ansible-playbook /home/vagrant/playbook.yml -i "localhost," --connection=local
+    echo "--- Fin de l'exécution du playbook ---"
+  SHELL
+
+end
