@@ -1,0 +1,37 @@
+# Vagrantfile pour créer une machine virtuelle Debian 11
+Vagrant.configure("2") do |config|
+    # Définir la version de la box et le nom de la machine
+    config.vm.box = "debian/bullseye64" # Debian 11 (Buster)
+    config.vm.hostname = "prod"
+  
+    # Configurer la mémoire RAM et l'espace disque de la machine virtuelle
+    config.vm.provider "virtualbox" do |vb|
+      vb.memory = "1024"  # 1 Go de RAM
+    end
+
+    config.vm.network "forwarded_port", guest: 22, host: 2222 
+
+    config.ssh.insert_key = false
+
+    # Provisionnement pour copier la clé publique dans la VM  
+    config.vm.provision "file", source: "../keys/insecure_private_key.pub", destination: "/home/vagrant/.ssh/authorized_keys"
+
+    config.vm.provision "shell", inline: <<-SHELL
+        # Ensure the correct permissions for the .ssh directory and authorized_keys file
+        chown -R vagrant:vagrant /home/vagrant/.ssh
+        chmod 700 /home/vagrant/.ssh
+        chmod 600 /home/vagrant/.ssh/authorized_keys
+
+        # Set password for vagrant user
+        echo "vagrant:vagrant" | chpasswd
+
+        # Enable password authentication in SSH config
+        sed -i 's/^#PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+        sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
+        # Restart SSH service to apply changes
+        systemctl restart ssh
+    SHELL
+    
+  end
+  
