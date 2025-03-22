@@ -1,0 +1,3 @@
+sonar_image: sonarqube:lts
+sonar_container_name: sonar
+sonar_port: 9000

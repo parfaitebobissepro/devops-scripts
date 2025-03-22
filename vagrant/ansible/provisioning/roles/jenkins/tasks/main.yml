@@ -1,0 +1,11 @@
+- name: Exécuter Jenkins dans Docker
+  docker_container:
+    name: "{{ jenkins_container_name }}"
+    image: "{{ jenkins_image }}"
+    state: started
+    restart_policy: always
+    published_ports:
+      - "{{ jenkins_port }}:8080"
+    env:
+      JENKINS_USER: "admin"
+      JENKINS_PASS: "admin"

@@ -1,5 +1,5 @@
 - name: Install Docker Engine
-  hosts: all
+  hosts: localhost
   become: yes
 
   tasks:
@@ -39,7 +39,7 @@
       service:
         name: docker
         state: started
-
+        
     - name: Allow password authentication
       lineinfile:
         path: /etc/ssh/sshd_config
@@ -59,6 +59,10 @@
         name: vagrant
         password: "{{ 'vagrant' | password_hash('sha512') }}"
 
+  roles:
+    - nexus
+    - jenkins
+    # - sonar
 
   handlers:
   - name: restart sshd

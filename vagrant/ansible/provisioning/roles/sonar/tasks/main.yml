@@ -1,0 +1,11 @@
+- name: Exécuter SonarQube dans Docker
+  docker_container:
+    name: "{{ sonar_container_name }}"
+    image: "{{ sonar_image }}"
+    state: started
+    restart_policy: always
+    published_ports:
+      - "{{ sonar_port }}:9000"
+    env:
+      SONARQUBE_JDBC_USERNAME: "admin"
+      SONARQUBE_JDBC_PASSWORD: "admin"
