@@ -1,3 +1,4 @@
 jenkins_image: jenkins/jenkins:lts
 jenkins_container_name: jenkins
 jenkins_port: 8080
+jenkins_home: /jenkins_data

@@ -6,6 +6,25 @@
     restart_policy: always
     published_ports:
       - "{{ sonar_port }}:9000"
+    # volumes:
+    #   - "/opt/sonarqube:/opt/sonarqube"
     env:
       SONARQUBE_JDBC_USERNAME: "admin"
       SONARQUBE_JDBC_PASSWORD: "admin"
+      # SONARQUBE_JDBC_URL: "jdbc:postgresql://db:5432/sonar"
+#     command: >
+#       bash -c "echo 'sonar.web.context=/sonar' > /opt/sonarqube/conf/sonar.properties && exec java -jar /opt/sonarqube/lib/sonar-application-*.jar"
+# - name: Attendre que SonarQube soit opérationnel
+#   wait_for:
+#     port: "{{ sonar_port }}"
+#     delay: 10
+#     timeout: 300
+#     state: started
+# - name: Vérifier l'état de SonarQube
+#   uri:
+#     url: "http://localhost:{{ sonar_port }}/api/system/status"
+#     return_content: yes
+#   register: sonar_status
+# - name: Afficher l'état de SonarQube
+#   debug:
+#     msg: "SonarQube status: {{ sonar_status.content }}"

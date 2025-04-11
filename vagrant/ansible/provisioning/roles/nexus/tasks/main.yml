@@ -16,6 +16,8 @@
     restart_policy: always
     published_ports:
       - "{{ nexus_port }}:8081"
+    volumes:
+      - "{{ nexus_home }}:/opt/sonatype/nexus3"
     env:
       NEXUS_SECURITY_RANDOMPASSWORD: "false"
       JAVA_OPTS: "-Xms256m -Xmx512m -XX:MaxDirectMemorySize=512m"  # Adjusted Java heap settings

@@ -6,6 +6,8 @@
     restart_policy: always
     published_ports:
       - "{{ jenkins_port }}:8080"
+    volumes:
+      - "{{ jenkins_home }}:/var/jenkins_home"
+      - "{{ playbook_dir }}/files/:/usr/share/jenkins/ref/init.groovy.d/"
     env:
-      JENKINS_USER: "admin"
-      JENKINS_PASS: "admin"
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"

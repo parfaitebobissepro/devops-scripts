@@ -1,3 +1,4 @@
 nexus_image: sonatype/nexus3
 nexus_container_name: nexus
 nexus_port: 8081
+nexus_home: /opt/sonatype/nexus3

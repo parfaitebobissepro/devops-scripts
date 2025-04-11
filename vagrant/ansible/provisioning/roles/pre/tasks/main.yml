@@ -37,24 +37,36 @@
     name: docker
     state: started
 
-- name: Reset SSH connection to load pip3
-  ansible.builtin.meta: reset_connection
+- name: Create multiple folders with docker user rights
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: docker
+    group: docker
+    mode: '0777'
+  loop:
+    - /jenkins_data
+    - /opt/sonatype/nexus3
+    - /opt/sonarqube
+
+# - name: Reset SSH connection to load pip3
+#   ansible.builtin.meta: reset_connection
     
-- name: Allow password authentication
-  lineinfile:
-    path: /etc/ssh/sshd_config
-    regexp: "^PasswordAuthentication"
-    line: "PasswordAuthentication yes"
-    state: present
-  notify: restart sshd
+# - name: Allow password authentication
+#   lineinfile:
+#     path: /etc/ssh/sshd_config
+#     regexp: "^PasswordAuthentication"
+#     line: "PasswordAuthentication yes"
+#     state: present
+#   notify: restart sshd
 
-- name: Set authorized key took from file
-  authorized_key:
-    user: vagrant
-    state: present
-    key: "{{ lookup('file', '/home/vagrant/.ssh/authorized_keys') }}"
+# - name: Set authorized key took from file
+#   authorized_key:
+#     user: vagrant
+#     state: present
+#     key: "{{ lookup('file', '/home/vagrant/.ssh/authorized_keys') }}"
 
-- name: Set password for vagrant user
-  user:
-    name: vagrant
-    password: "{{ 'vagrant' | password_hash('sha512') }}"
+# - name: Set password for vagrant user
+#   user:
+#     name: vagrant
+#     password: "{{ 'vagrant' | password_hash('sha512') }}"
