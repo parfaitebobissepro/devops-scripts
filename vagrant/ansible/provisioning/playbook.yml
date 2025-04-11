@@ -1,71 +1,13 @@
-- name: Install Docker Engine
+- name: Pre-install requirements
   hosts: localhost
   become: yes
+  roles:
+    - pre
 
-  tasks:
-    - name: Install required packages
-      apt:
-        name:
-          - ca-certificates
-          - curl
-          - gnupg2
-          - software-properties-common
-          - apt-transport-https
-        update_cache: yes
-
-    - name: Add Docker GPG key
-      apt_key:
-        url: https://download.docker.com/linux/debian/gpg
-        state: present
-
-    - name: Add Docker repository
-      apt_repository:
-        repo: deb [arch=amd64] https://download.docker.com/linux/debian bullseye stable
-        state: present
-
-    - name: Install Docker Engine
-      apt:
-        name:
-          - docker-ce
-          - docker-ce-cli
-          - containerd.io
-
-    - name: Add user to docker group
-      user:
-        name: "docker"
-        groups: docker
-
-    - name: Start Docker service
-      service:
-        name: docker
-        state: started
-        
-    - name: Allow password authentication
-      lineinfile:
-        path: /etc/ssh/sshd_config
-        regexp: "^PasswordAuthentication"
-        line: "PasswordAuthentication yes"
-        state: present
-      notify: restart sshd
-
-    - name: Set authorized key took from file
-      authorized_key:
-        user: vagrant
-        state: present
-        key: "{{ lookup('file', '/home/vagrant/.ssh/authorized_keys') }}"
-
-    - name: Set password for vagrant user
-      user:
-        name: vagrant
-        password: "{{ 'vagrant' | password_hash('sha512') }}"
-
+- name: Install DevOps Stack
+  hosts: localhost
+  become: yes
   roles:
     - nexus
     - jenkins
-    # - sonar
-
-  handlers:
-  - name: restart sshd
-    service:
-      name: sshd
-      state: restarted
+    - sonar
