@@ -8,6 +8,6 @@
       - "{{ jenkins_port }}:8080"
     volumes:
       - "{{ jenkins_home }}:/var/jenkins_home"
-      - "{{ playbook_dir }}/files/:/usr/share/jenkins/ref/init.groovy.d/"
+      - "{{ playbook_dir }}/files/jenkins/:/usr/share/jenkins/ref/init.groovy.d/"
     env:
       JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"

@@ -22,3 +22,31 @@
       NEXUS_SECURITY_RANDOMPASSWORD: "false"
       JAVA_OPTS: "-Xms256m -Xmx512m -XX:MaxDirectMemorySize=512m"  # Adjusted Java heap settings
     memory: "2g"
+    
+- name: Wait for Nexus to be ready
+  uri:
+    url: "http://localhost:{{ nexus_port }}/service/rest/v1/status"
+    method: GET
+    status_code: 200
+  register: result
+  until: result.status == 200
+  retries: 30
+  delay: 10
+
+- name: Create 'integ' user via REST API
+  uri:
+    url: "http://localhost:{{ nexus_port }}/service/rest/v1/security/users"
+    method: POST
+    headers:
+      Content-Type: "application/json"
+      Authorization: "Basic {{ 'admin:admin123' | b64encode }}"
+    body_format: json
+    body:
+      userId: "integ"
+      firstName: "Integration"
+      lastName: "User"
+      emailAddress: "integ@local"
+      password: "integ"
+      status: "active"
+      roles: ["nx-admin"]
+    status_code: 200
