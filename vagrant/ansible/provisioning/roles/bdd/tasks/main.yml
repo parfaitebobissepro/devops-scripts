@@ -1,0 +1,4 @@
+- name: Lancer les conteneurs Docker Compose
+  become: true
+  community.docker.docker_compose:
+    project_src: "{{ playbook_dir }}/files/db/"

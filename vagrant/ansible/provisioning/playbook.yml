@@ -8,6 +8,7 @@
   hosts: localhost
   become: yes
   roles:
+    - bdd
     - nexus
     - jenkins
     - sonar

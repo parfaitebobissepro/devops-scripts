@@ -1,15 +1,16 @@
-- name: Install Docker SDK for Python
-  pip:
-    name: docker
+- name: Assurez-vous que Docker est installé
+  ansible.builtin.package:
+    name: docker.io
+    state: present
 
-- name: Ensure Docker service is started
-  service:
+- name: Démarrer le service Docker
+  ansible.builtin.service:
     name: docker
     state: started
-    enabled: yes
-    
+    enabled: true
+
 - name: Exécuter Nexus dans Docker
-  docker_container:
+  community.docker.docker_container:
     name: "{{ nexus_container_name }}"
     image: "{{ nexus_image }}"
     state: started
@@ -20,7 +21,7 @@
       - "{{ nexus_home }}:/opt/sonatype/nexus3"
     env:
       NEXUS_SECURITY_RANDOMPASSWORD: "false"
-      JAVA_OPTS: "-Xms256m -Xmx512m -XX:MaxDirectMemorySize=512m"  # Adjusted Java heap settings
+      JAVA_OPTS: "-Xms256m -Xmx512m -XX:MaxDirectMemorySize=512m"
     memory: "2g"
     
 - name: Wait for Nexus to be ready

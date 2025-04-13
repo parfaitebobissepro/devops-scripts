@@ -20,17 +20,33 @@
     repo: deb [arch=amd64] https://download.docker.com/linux/debian bullseye stable
     state: present
 
-- name: Install Docker Engine
+- name: Install Docker Engine (latest version)
   apt:
     name:
       - docker-ce
       - docker-ce-cli
       - containerd.io
+    state: latest
+
+- name: Install required Python libraries
+  pip:
+    name:
+      - "requests==2.31.0"
+      - "docker==6.1.3"
+      - "docker-compose"
+    state: present
 
 - name: Add user to docker group
   user:
     name: "docker"
     groups: docker
+
+- name: Create user integ with password
+  user:
+    name: "integ"
+    password: "{{ 'integ' | password_hash('sha512') }}"
+    groups: docker,vagrant
+    append: yes
 
 - name: Start Docker service
   service:
@@ -49,16 +65,16 @@
     - /opt/sonatype/nexus3
     - /opt/sonarqube
 
-# - name: Reset SSH connection to load pip3
-#   ansible.builtin.meta: reset_connection
+- name: Reset SSH connection to load pip3
+  ansible.builtin.meta: reset_connection
     
-# - name: Allow password authentication
-#   lineinfile:
-#     path: /etc/ssh/sshd_config
-#     regexp: "^PasswordAuthentication"
-#     line: "PasswordAuthentication yes"
-#     state: present
-#   notify: restart sshd
+- name: Allow password authentication
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "^PasswordAuthentication"
+    line: "PasswordAuthentication yes"
+    state: present
+  notify: restart sshd
 
 # - name: Set authorized key took from file
 #   authorized_key:

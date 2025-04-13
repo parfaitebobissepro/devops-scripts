@@ -11,7 +11,9 @@ Vagrant.configure("2") do |config|
   config.vm.network "forwarded_port", guest: 22, host: 2222 
   config.vm.network "forwarded_port", guest: 8080, host: 8080 
   config.vm.network "forwarded_port", guest: 8081, host: 8081 
-  config.vm.network "forwarded_port", guest: 9000, host: 9000 
+  config.vm.network "forwarded_port", guest: 9000, host: 9000
+  config.vm.network "forwarded_port", guest: 3307, host: 3307
+  config.vm.network "forwarded_port", guest: 3308, host: 3308
 
   # Provisionnement pour copier la clé publique dans la VM
   # config.vm.provision "file", source: "../keys/insecure_private_key.pub", destination: "/home/vagrant/.ssh/authorized_keys"
@@ -29,12 +31,18 @@ Vagrant.configure("2") do |config|
     echo "Installation des outils nécessaires..."
     apt-get install -y sudo curl vim unzip htop software-properties-common
 
-    echo "Ajout du dépôt Ansible officiel pour Debian Bullseye..."
-    echo "deb http://deb.debian.org/debian bullseye-backports main" | tee /etc/apt/sources.list.d/bullseye-backports.list
-    apt-get update -y
+    echo "🧹 Suppression d'Ansible installé via APT (si présent)..."
+    apt-get remove -y ansible || true
 
-    echo "Installation d'Ansible depuis les backports..."
-    apt-get install -y -t bullseye-backports ansible
+    echo "📦 Installation des dépendances Python..."
+    apt-get install -y python3 python3-pip python3-dev build-essential
+
+    echo "⬆️ Mise à jour de pip et installation de la dernière version d'Ansible..."
+    pip3 install --upgrade pip
+    pip3 install ansible
+
+    echo "✅ Ansible installé avec succès ! Version :"
+    ansible --version
 
     echo "--- Fin du provisioning Shell ---"
   SHELL
