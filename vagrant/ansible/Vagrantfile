@@ -5,15 +5,14 @@ Vagrant.configure("2") do |config|
 
   # Configurer la mémoire RAM et l'espace disque de la machine virtuelle
   config.vm.provider "virtualbox" do |vb|
-    vb.memory = "6072" 
+    vb.memory = "7072" 
   end
 
   config.vm.network "forwarded_port", guest: 22, host: 2222 
   config.vm.network "forwarded_port", guest: 8080, host: 8080 
   config.vm.network "forwarded_port", guest: 8081, host: 8081 
   config.vm.network "forwarded_port", guest: 9000, host: 9000
-  config.vm.network "forwarded_port", guest: 3307, host: 3307
-  config.vm.network "forwarded_port", guest: 3308, host: 3308
+  config.vm.network "forwarded_port", guest: 5432, host: 5432
 
   # Provisionnement pour copier la clé publique dans la VM
   # config.vm.provision "file", source: "../keys/insecure_private_key.pub", destination: "/home/vagrant/.ssh/authorized_keys"

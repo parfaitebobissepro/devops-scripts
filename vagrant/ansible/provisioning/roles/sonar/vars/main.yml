@@ -1,3 +1,6 @@
 sonar_image: sonarqube:lts
 sonar_container_name: sonar
 sonar_port: 9000
+sonar_home: sonarqube_data
+sonar_default_user: admin
+sonar_default_password: admin

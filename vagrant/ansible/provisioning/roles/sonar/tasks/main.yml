@@ -1,30 +1,80 @@
-- name: Exécuter SonarQube dans Docker
-  docker_container:
+- name: Configure system settings for Elasticsearch
+  sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    state: present
+  with_items:
+    - { name: 'vm.max_map_count', value: '262144' }
+    - { name: 'fs.file-max', value: '65536' }
+
+- name: Démarrer le conteneur SonarQube
+  community.docker.docker_container:
     name: "{{ sonar_container_name }}"
     image: "{{ sonar_image }}"
     state: started
     restart_policy: always
+    network_mode: host
     published_ports:
       - "{{ sonar_port }}:9000"
-    # volumes:
-    #   - "/opt/sonarqube:/opt/sonarqube"
+    volumes:
+      - "{{ sonar_home }}:/opt/sonarqube/data"
     env:
-      SONARQUBE_JDBC_USERNAME: "admin"
-      SONARQUBE_JDBC_PASSWORD: "admin"
-      # SONARQUBE_JDBC_URL: "jdbc:postgresql://db:5432/sonar"
-#     command: >
-#       bash -c "echo 'sonar.web.context=/sonar' > /opt/sonarqube/conf/sonar.properties && exec java -jar /opt/sonarqube/lib/sonar-application-*.jar"
-# - name: Attendre que SonarQube soit opérationnel
-#   wait_for:
-#     port: "{{ sonar_port }}"
-#     delay: 10
-#     timeout: 300
-#     state: started
-# - name: Vérifier l'état de SonarQube
-#   uri:
-#     url: "http://localhost:{{ sonar_port }}/api/system/status"
-#     return_content: yes
-#   register: sonar_status
-# - name: Afficher l'état de SonarQube
-#   debug:
-#     msg: "SonarQube status: {{ sonar_status.content }}"
+      SONAR_JDBC_USERNAME: "integ"
+      SONAR_JDBC_PASSWORD: "integ"
+      SONAR_JDBC_URL: "jdbc:postgresql://localhost:5432/sonarqube"
+      SONAR_SEARCH_JAVAADDITIONALOPTS: "-Dbootstrap.system_call_filter=false"
+
+- name: Wait for SonarQube to be up and running
+  uri:
+    url: "http://localhost:{{ sonar_port }}/api/system/health"
+    method: GET
+    headers:
+      Content-Type: "application/json"
+      Authorization: "Basic {{ (sonar_default_user + ':' + sonar_default_password) | b64encode }}"
+    status_code: 200
+  register: result
+  until: result.status == 200
+  retries: 30
+  delay: 10
+
+- name: Change default SonarQube admin password to 'integ'
+  uri:
+    url: "http://localhost:{{ sonar_port }}/api/users/change_password"
+    method: POST
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
+      Authorization: "Basic {{ (sonar_default_user + ':' + sonar_default_password) | b64encode }}"
+    body_format: form-urlencoded
+    body:
+      login: "{{ sonar_default_user }}"
+      previousPassword: "{{ sonar_default_password }}"
+      password: "integ"
+    status_code: 204
+
+- name: Create new user 'integ' with password 'integ'
+  uri:
+    url: "http://localhost:{{ sonar_port }}/api/users/create"
+    method: POST
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
+      Authorization: "Basic {{ (sonar_default_user + ':integ') | b64encode }}"
+    body_format: form-urlencoded
+    body:
+      login: "integ"
+      name: "Integration User"
+      password: "integ"
+    status_code: 200
+  ignore_errors: yes
+
+- name: Add user 'integ' to sonar-administrators group
+  uri:
+    url: "http://localhost:{{ sonar_port }}/api/user_groups/add_user"
+    method: POST
+    headers:
+      Content-Type: "application/x-www-form-urlencoded"
+      Authorization: "Basic {{ ('admin:integ') | b64encode }}"
+    body_format: form-urlencoded
+    body:
+      name: "sonar-administrators"
+      login: "integ"
+    status_code: 204

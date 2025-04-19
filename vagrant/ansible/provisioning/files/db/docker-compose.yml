@@ -1,34 +1,18 @@
 version: "3.8"
 
 services:
-  mariadb_sonarqube:
-    image: mariadb:latest
-    container_name: mariadb_sonarqube
+  postgres_sonarqube:
+    image: postgres:latest
+    container_name: postgres_sonarqube
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: rootpass
-      MYSQL_DATABASE: sonarqube
-      MYSQL_USER: integ
-      MYSQL_PASSWORD: integ
-    volumes:
-      - sonarqube_db_data:/var/lib/mysql
+      POSTGRES_USER: integ
+      POSTGRES_PASSWORD: integ
+      POSTGRES_DB: sonarqube
     ports:
-      - "3307:3306" # Expose port 3306 for mariadb_sonarqube
-
-  mariadb_other:
-    image: mariadb:latest
-    container_name: mariadb_other
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: otherroot
-      MYSQL_DATABASE: otherdb
-      MYSQL_USER: otheruser
-      MYSQL_PASSWORD: otherpass
-    volumes:
-      - other_db_data:/var/lib/mysql
-    ports:
-      - "3308:3306" # Expose port 3307 for mariadb_other
+      - "5432:5432"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
-  sonarqube_db_data:
-  other_db_data:
+  postgres_sonarqube:

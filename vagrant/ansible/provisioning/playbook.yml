@@ -9,6 +9,6 @@
   become: yes
   roles:
     - bdd
+    - sonar
     - nexus
     - jenkins
-    - sonar
